@@ -1,5 +1,5 @@
-name := 'hello-linux'
-appid := 'com.github.yohanespradono.HelloCosmicLinux'
+name := 'cosmic-applet-linux-menu'
+appid := 'com.github.yohanespradono.CosmicAppletLinuxMenu'
 
 rootdir := ''
 prefix := '/usr'
@@ -47,7 +47,7 @@ check-json: (check '--message-format=json')
 #run *args:
 #    env RUST_BACKTRACE=full cargo run --release {{args}}
 run:
-    env RUST_BACKTRACE=full cargo run --release --bin hello-linux
+    env RUST_BACKTRACE=full cargo run --release --bin cosmic-applet-linux-menu
 
 # Installs files
 install:
@@ -55,7 +55,7 @@ install:
     install -Dm0644 resources/app.desktop {{desktop-dst}}
     install -Dm0644 resources/app.metainfo.xml {{appdata-dst}}
     install -Dm0644 resources/icon.svg {{icon-dst}}
-    install -Dm0755 target/release/hello-linux-about {{rootdir}}/usr/bin/hello-linux-about
+    install -Dm0755 target/release/cosmic-applet-linux-menu-about {{rootdir}}/usr/bin/cosmic-applet-linux-menu-about
 
 # Uninstalls installed files
 uninstall:

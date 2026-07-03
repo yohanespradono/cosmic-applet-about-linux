@@ -10,6 +10,11 @@ use cosmic::prelude::*;
 use futures::SinkExt;
 use cosmic::applet::{menu_button};
 use cosmic::widget::{self, Container};
+use cosmic::iced::Task;
+use zbus::Connection;
+use logind_zbus::{
+    manager::ManagerProxy,
+};
 
 #[derive(Default)]
 pub struct AppModel {
@@ -72,7 +77,7 @@ impl cosmic::Application for AppModel {
     fn view(&self) -> Element<'_, Self::Message> {
         self.core
             .applet
-            .icon_button("distributor-logo")
+            .icon_button("linux")
             .on_press_down(Message::TogglePopup)
             .padding(0)
             .into()
@@ -173,32 +178,97 @@ impl cosmic::Application for AppModel {
                 }
             }
 
-            Message::About => {
+/*            Message::About => {
                 if let Ok(exe) = std::env::current_exe() {
                     if let Some(dir) = exe.parent() {
-                        match Command::new(dir.join("hello-linux-about")).spawn() {
+                        match Command::new(dir.join("cosmic-applet-linux-menu-about")).spawn() {
                             Ok(_) => {}
                             Err(e) => eprintln!("gagal buka about dialog: {e}"),
                         }
                     }
                 }
+            }*/
+            Message::About => {
+                if let Ok(exe) = std::env::current_exe() {
+                    if let Some(dir) = exe.parent() {
+                        let _ = Command::new(dir.join("cosmic-applet-linux-menu-about")).spawn();
+                    }
+                }
             }
+
 
             Message::Settings => {
                 let _ = Command::new("cosmic-settings")
                     .arg("about")
                     .spawn();
+                if let Some(p) = self.popup.take() {
+                    return destroy_popup(p);
+                }
             },
 
-            Message::Sleep => println!("Sleep clicked"),
-            Message::Restart => println!("Restart clicked"),
-            Message::Shutdown => println!("Shutdown clicked"),
-            Message::LockScreen => println!("Lock Screen clicked"),
-            Message::Logout => println!("Logout clicked"),
-            Message::Terminal => println!("Terminal"),
-            Message::Files => println!("Files"),
+            Message::Sleep => {
+                let _ = Command::new("systemctl")
+                    .arg("suspend")
+                    .spawn();
+                if let Some(p) = self.popup.take() {
+                    return destroy_popup(p);
+                }
+            }
+            Message::Restart => {
+                let _ = Command::new("cosmic-osd")
+                    .arg("restart")
+                    .spawn();
+                if let Some(p) = self.popup.take() {
+                    return destroy_popup(p);
+                }
+            }
+            Message::Shutdown => {
+                let _ = Command::new("cosmic-osd")
+                    .arg("shutdown")
+                    .spawn();
+                if let Some(p) = self.popup.take() {
+                    return destroy_popup(p);
+                }
+            }
+
+            Message::LockScreen => {
+                let _ = Command::new("loginctl")
+                    .arg("lock-session")
+                    .spawn();
+                if let Some(p) = self.popup.take() {
+                    return destroy_popup(p);
+                }
+            }
+            Message::Logout => {
+                let _ = Command::new("cosmic-osd")
+                    .arg("log-out")
+                    .spawn();
+                if let Some(p) = self.popup.take() {
+                    return destroy_popup(p);
+                }
+            }
+            Message::Terminal => {
+                let _ = Command::new("cosmic-term").spawn();
+                if let Some(p) = self.popup.take() {
+                    return destroy_popup(p);
+                }
+            }
+            Message::Files => {
+                let _ = Command::new("cosmic-files").spawn();
+
+                if let Some(p) = self.popup.take() {
+                    return destroy_popup(p);
+                }
+            }
         }
 
         Task::none()
     }
+
+}
+
+async fn restart() -> zbus::Result<()> {
+    let connection = Connection::system().await?;
+    let manager_proxy = ManagerProxy::new(&connection).await?;
+    manager_proxy.reboot(true).await
 }

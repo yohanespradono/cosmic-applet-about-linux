@@ -864,6 +864,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "cosmic-applet-linux-menu"
+version = "0.1.0"
+dependencies = [
+ "i18n-embed",
+ "i18n-embed-fl",
+ "libcosmic",
+ "logind-zbus",
+ "rust-embed",
+ "sysinfo",
+ "tokio",
+ "zbus",
+]
+
+[[package]]
 name = "cosmic-client-toolkit"
 version = "0.2.0"
 source = "git+https://github.com/pop-os/cosmic-protocols?rev=32283d7#32283d76a8d0342da74c4cc022a533c52dcf378f"
@@ -1951,18 +1965,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
 
 [[package]]
-name = "hello-linux"
-version = "0.1.0"
-dependencies = [
- "i18n-embed",
- "i18n-embed-fl",
- "libcosmic",
- "rust-embed",
- "sysinfo",
- "tokio",
-]
-
-[[package]]
 name = "hermit-abi"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2841,6 +2843,16 @@ name = "log"
 version = "0.4.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ceec5bc11778974d1bcb055b18002eba7f4b3518b6a0081b3af5f21666da9ad"
+
+[[package]]
+name = "logind-zbus"
+version = "5.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "469c962578b549a82f3d0cc72d0f77d1123780fa7121e2b03d78b0780f6ccac6"
+dependencies = [
+ "serde",
+ "zbus",
+]
 
 [[package]]
 name = "lru"

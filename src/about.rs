@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-use cosmic::iced::{Alignment, Length};
+use cosmic::iced::{Alignment, Length, Size};
 use cosmic::prelude::*;
 use cosmic::widget;
 
@@ -72,7 +72,21 @@ impl cosmic::Application for AboutApp {
             .map(|c| c.brand().to_string())
             .unwrap_or_else(|| "Unknown CPU".into());
         let cpu_cores = sys.cpus().len();
+        let used_mem_gb = sys.used_memory() as f64 / 1024.0 / 1024.0 / 1024.0;
         let total_mem_gb = sys.total_memory() as f64 / 1024.0 / 1024.0 / 1024.0;
+
+        let mem_percent = if total_mem_gb > 0.0 {
+            (used_mem_gb / total_mem_gb) * 100.0
+        } else {
+            0.0
+        };
+
+        let memory_text = format!(
+            "{:.1} GiB / {:.1} GiB ({:.0}%)",
+            used_mem_gb,
+            total_mem_gb,
+            mem_percent
+        );
 
         let disks = sysinfo::Disks::new_with_refreshed_list();
         let disk_name = disks
@@ -80,7 +94,7 @@ impl cosmic::Application for AboutApp {
             .map(|d| d.name().to_string_lossy().to_string())
             .unwrap_or_else(|| "Unknown".into());
 
-        let serial = std::fs::read_to_string("/sys/class/dmi/id/product_serial")
+        let _serial = std::fs::read_to_string("/sys/class/dmi/id/product_serial")
             .map(|s| s.trim().to_string())
             .unwrap_or_else(|_| "Not available".into());
 
@@ -140,27 +154,42 @@ impl cosmic::Application for AboutApp {
             .push(spec_row("Hostname", &hostname))
             .push(spec_row("CPU", &cpu_brand))
             .push(spec_row("Cores", &format!("{} vCPUs", cpu_cores)))
-            .push(spec_row("Memory", &format!("{total_mem_gb:.1} GB")))
+            .push(spec_row("Memory", &memory_text))
             .push(spec_row("Disk", &disk_name))
             // Serial sengaja disembunyikan / ditaruh paling bawah jika dibutuhkan
             // .push(spec_row("Serial", &serial))
             .spacing(8)
             .width(Length::FillPortion(1));
 
-        // Satukan kolom hardware dan software berdampingan
+
+        let gpus = detect_gpus();
+
+        let mut gpu_column = widget::column::with_capacity(gpus.len());
+
+        for (i, gpu) in gpus.iter().enumerate() {
+            gpu_column = gpu_column.push(
+                spec_row(&format!("GPU {}", i + 1), gpu)
+            );
+        }
+
+        let gpu_column = gpu_column.spacing(8);
+
         let right_panel_grid = widget::row::with_capacity(2)
             .push(right_col1)
             .push(right_col2)
-            .spacing(20)
-            .width(Length::Fill);
+            .spacing(20);
 
-        // Bungkus baris utama: Left Panel (Logo) + Right Panel (Grid Info)
+        let right_panel = widget::column::with_capacity(3)
+            .push(right_panel_grid)
+            .push(widget::divider::horizontal::default())
+            .push(gpu_column)
+            .spacing(12);
+
         let info_row = widget::row::with_capacity(2)
             .push(left_panel)
-            .push(right_panel_grid)
+            .push(right_panel)
             .spacing(32)
-            .align_y(Alignment::Center)
-            .width(Length::Fill);
+            .align_y(Alignment::Start);
 
         let more_info = widget::button::standard("More Info...")
             .on_press(Message::MoreInfo);
@@ -172,16 +201,12 @@ impl cosmic::Application for AboutApp {
             .push(info_row)
             .push(more_info)
             .push(footer)
-            .spacing(20)
-            .padding(24)
+            .padding(8)
+            .spacing(8)
             .align_x(Alignment::Center);
 
         widget::container(content)
-            .width(Length::Fill)
-            .height(Length::Fill)
             .class(cosmic::theme::Container::Background)
-            .center_x(Length::Fill)
-            .center_y(Length::Fill)
             .into()
     }
 }
@@ -209,12 +234,52 @@ fn spec_row(label: &str, value: &str) -> Element<'static, Message> {
 }
 
 fn main() -> cosmic::iced::Result {
-    // Dimensi window dilebarkan secara horizontal agar proporsional menampung dua kolom info
-    let size = cosmic::iced::Size::new(860.0, 360.0);
-
     cosmic::app::run::<AboutApp>(
-        cosmic::app::Settings::default()
-            .size(size),
+        cosmic::app::Settings::default(), // tanpa .size()
         (),
     )
+}
+
+
+fn detect_gpus() -> Vec<String> {
+    let output = std::process::Command::new("sh")
+        .arg("-c")
+        .arg("lspci | grep -E 'VGA|3D|Display'")
+        .output();
+
+    let Ok(output) = output else {
+        return vec!["Unknown GPU".into()];
+    };
+
+    let text = String::from_utf8_lossy(&output.stdout);
+
+    text.lines()
+        .map(|line| {
+            let name = line
+                .split(": ")
+                .nth(1)
+                .unwrap_or(line)
+                .to_string();
+
+            let gpu_type = if name.contains("Arc")
+                || name.contains("NVIDIA")
+                || name.contains("RTX")
+                || name.contains("GTX")
+                || name.contains("Radeon RX")
+            {
+                "Discrete"
+            } else if name.contains("Iris")
+                || name.contains("UHD")
+                || name.contains("HD Graphics")
+                || name.contains("680M")
+                || name.contains("780M")
+            {
+                "Integrated"
+            } else {
+                "Unknown"
+            };
+
+            format!("{name} [{gpu_type}]")
+        })
+        .collect()
 }

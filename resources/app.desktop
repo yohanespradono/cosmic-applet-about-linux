@@ -1,9 +1,9 @@
 [Desktop Entry]
-Name=Hello Linux
+Name=Linux Menu
 Comment=An application for the COSMIC™ desktop
 Type=Application
-Icon=com.github.yohanespradono.HelloCosmicLinux
-Exec=hello-linux %F
+Icon=linux
+Exec=cosmic-applet-linux-menu %F
 Terminal=false
 StartupNotify=true
 Categories=COSMIC
